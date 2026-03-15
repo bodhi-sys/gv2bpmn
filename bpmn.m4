@@ -1,11 +1,11 @@
 changequote(`[[', `]]')dnl
-define([[check_node]], [[ifdef([[NODE_$1]], , [[ERROR: no such node '$1'
+define([[check_node]], [[ifdef([[NODE_$1]], , [[ERROR: no such node $1
 ]])]])dnl
 define([[start]], [[START_NODE [label="$1", shape=circle]
 define([[NODE_START_NODE]], [[1]])]])dnl
 define([[end]], [[END_NODE [label="$1", shape=doublecircle]
 define([[NODE_END_NODE]], [[1]])]])dnl
-define([[t]], [[ifdef([[NODE_$1]], [[ERROR: duplicate task node '$1'
+define([[t]], [[ifdef([[NODE_$1]], [[ERROR: duplicate task node $1
 ]], [[$1 [label="$2"]
 define([[NODE_$1]], [[1]])]])]])dnl
 define([[g_xor]], [[$1 [label="$2", shape=diamond]
