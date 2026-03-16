@@ -2,6 +2,17 @@ use serde::Deserialize;
 use std::io::{self, Read, Write};
 use quick_xml::events::{Event, BytesDecl, BytesStart, BytesEnd, BytesText};
 use quick_xml::Writer;
+use clap::Parser;
+use std::fs::File;
+use std::path::PathBuf;
+
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    /// Input Graphviz JSON file. If not provided, reads from stdin.
+    #[arg(value_name = "FILE")]
+    input: Option<PathBuf>,
+}
 
 #[derive(Debug, Deserialize)]
 pub struct Graph {
@@ -294,8 +305,19 @@ pub fn convert_to_bpmn<W: Write>(json_str: &str, output: W) -> io::Result<()> {
 }
 
 fn main() -> io::Result<()> {
+    let args = Args::parse();
     let mut buffer = String::new();
-    io::stdin().read_to_string(&mut buffer)?;
+
+    match args.input {
+        Some(path) => {
+            let mut file = File::open(path)?;
+            file.read_to_string(&mut buffer)?;
+        }
+        None => {
+            io::stdin().read_to_string(&mut buffer)?;
+        }
+    }
+
     convert_to_bpmn(&buffer, io::stdout())
 }
 
