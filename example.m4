@@ -10,7 +10,6 @@ edge [arrowsize=0.9, penwidth=0.9, minlen=2, splines="ortho"]
   start([[Ферма: Начало]])
   t(milking, [[Доение коровы]])
   t(transport_milk, [[Транспортировка молока на завод]])
-  t(receiving, [[Прием и контроль качества молока]])
   t(pasteurization, [[Пастеризация молока]])
   t(standardization, [[Стандартизация жирности]])
   t(culture_addition, [[Добавление закваски (мезофильные культуры)]])
@@ -26,6 +25,7 @@ edge [arrowsize=0.9, penwidth=0.9, minlen=2, splines="ortho"]
 
   g_xor(quality_decision, [[Соответствует качеству?]])
   g_xor(shelflife_decision, [[Соответствует срокам годности?]])
+  g_xor(receiving, [[Прием и контроль качества молока]])
 
 
   
@@ -33,7 +33,6 @@ edge [arrowsize=0.9, penwidth=0.9, minlen=2, splines="ortho"]
   to(milking, transport_milk)
   to(transport_milk, receiving)
 
-  to(receiving, pasteurization)
   g_to(receiving, transport_milk, [[Не принято: возврат/переработка]])
   g_to(receiving, pasteurization, [[Принято]])
 
@@ -55,10 +54,6 @@ edge [arrowsize=0.9, penwidth=0.9, minlen=2, splines="ortho"]
 
   to(distribution, retail)
   to(retail, consumer)
-
-# these edges should produce "ERROR: no such node 'error'"
-  to(error, consumer)
-  g_to(quality_decision, error, [[failed path]])
 
   to(consumer, END_NODE)
 
