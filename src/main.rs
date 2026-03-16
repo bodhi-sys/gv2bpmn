@@ -1,5 +1,5 @@
 use serde::Deserialize;
-use std::io::{self, Read};
+use std::io::{self, Read, Write};
 use quick_xml::events::{Event, BytesDecl, BytesStart, BytesEnd, BytesText};
 use quick_xml::Writer;
 
@@ -33,7 +33,7 @@ pub struct Edge {
     pub label_pos: Option<String>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum BpmnElement {
     StartEvent { id: String, name: String, x: f64, y: f64 },
     EndEvent { id: String, name: String, x: f64, y: f64 },
@@ -46,17 +46,17 @@ pub enum BpmnElement {
 impl BpmnElement {
     fn id(&self) -> &str {
         match self {
-            BpmnElement::StartEvent { id, .. } => id,
-            BpmnElement::EndEvent { id, .. } => id,
-            BpmnElement::Task { id, .. } => id,
-            BpmnElement::ExclusiveGateway { id, .. } => id,
-            BpmnElement::ParallelGateway { id, .. } => id,
+            BpmnElement::StartEvent { id, .. } |
+            BpmnElement::EndEvent { id, .. } |
+            BpmnElement::Task { id, .. } |
+            BpmnElement::ExclusiveGateway { id, .. } |
+            BpmnElement::ParallelGateway { id, .. } |
             BpmnElement::InclusiveGateway { id, .. } => id,
         }
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct BpmnFlow {
     pub id: String,
     pub name: String,
@@ -106,11 +106,8 @@ fn parse_bb(bb: &str) -> (f64, f64, f64, f64) {
     }
 }
 
-fn main() -> io::Result<()> {
-    let mut buffer = String::new();
-    io::stdin().read_to_string(&mut buffer)?;
-
-    let graph: Graph = serde_json::from_str(&buffer).expect("Failed to parse JSON");
+pub fn convert_to_bpmn<W: Write>(json_str: &str, output: W) -> io::Result<()> {
+    let graph: Graph = serde_json::from_str(json_str).expect("Failed to parse JSON");
 
     let (_, _, _, height) = graph.bb.as_deref().map(parse_bb).unwrap_or((0.0, 0.0, 0.0, 1000.0));
 
@@ -163,7 +160,7 @@ fn main() -> io::Result<()> {
         }
     }
 
-    let mut writer = Writer::new_with_indent(io::stdout(), b' ', 2);
+    let mut writer = Writer::new_with_indent(output, b' ', 2);
 
     writer.write_event(Event::Decl(BytesDecl::new("1.0", Some("UTF-8"), None))).unwrap();
 
@@ -294,4 +291,142 @@ fn main() -> io::Result<()> {
     writer.write_event(Event::End(BytesEnd::new("bpmn:definitions"))).unwrap();
 
     Ok(())
+}
+
+fn main() -> io::Result<()> {
+    let mut buffer = String::new();
+    io::stdin().read_to_string(&mut buffer)?;
+    convert_to_bpmn(&buffer, io::stdout())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_pos() {
+        assert_eq!(parse_pos("10,20"), (10.0, 20.0));
+        assert_eq!(parse_pos("10.5,20.7"), (10.5, 20.7));
+        assert_eq!(parse_pos("invalid"), (0.0, 0.0));
+    }
+
+    #[test]
+    fn test_parse_edge_pos() {
+        let pos = "s,10,10 20,20 30,30 e,40,40";
+        let expected = vec![(10.0, 10.0), (20.0, 20.0), (30.0, 30.0), (40.0, 40.0)];
+        assert_eq!(parse_edge_pos(pos), expected);
+    }
+
+    #[test]
+    fn test_parse_bb() {
+        assert_eq!(parse_bb("0,0,100,200"), (0.0, 0.0, 100.0, 200.0));
+        assert_eq!(parse_bb("invalid"), (0.0, 0.0, 0.0, 0.0));
+    }
+
+    #[test]
+    fn test_convert_to_bpmn_basic() {
+        let json = r#"{
+            "bb": "0,0,100,100",
+            "objects": [
+                {
+                    "_gvid": 0,
+                    "name": "start__node",
+                    "label": "Start",
+                    "pos": "50,80",
+                    "shape": "circle"
+                },
+                {
+                    "_gvid": 1,
+                    "name": "t__node",
+                    "label": "Task",
+                    "pos": "50,40",
+                    "width": "1",
+                    "height": "0.5"
+                }
+            ],
+            "edges": [
+                {
+                    "_gvid": 0,
+                    "tail": 0,
+                    "head": 1,
+                    "pos": "50,70 50,50"
+                }
+            ]
+        }"#;
+        let mut output = Vec::new();
+        convert_to_bpmn(json, &mut output).unwrap();
+        let xml = String::from_utf8(output).unwrap();
+
+        assert!(xml.contains("bpmn:startEvent"));
+        assert!(xml.contains("bpmn:task"));
+        assert!(xml.contains("bpmn:sequenceFlow"));
+        assert!(xml.contains("bpmndi:BPMNDiagram"));
+    }
+
+    #[test]
+    fn test_integration_full_mapping() {
+        let json = r#"{
+            "bb": "0,0,100,100",
+            "objects": [
+                { "_gvid": 0, "name": "START_NODE", "label": "Start", "pos": "50,90", "shape": "circle" },
+                { "_gvid": 1, "name": "t__task1", "label": "Task 1", "pos": "50,70", "width": "1", "height": "0.5" },
+                { "_gvid": 2, "name": "g_xor__split", "label": "Split", "pos": "50,50", "shape": "diamond" },
+                { "_gvid": 3, "name": "end__finish", "label": "End", "pos": "50,10", "shape": "doublecircle" }
+            ],
+            "edges": [
+                { "_gvid": 0, "tail": 0, "head": 1, "pos": "50,90 50,70" },
+                { "_gvid": 1, "tail": 1, "head": 2, "pos": "50,70 50,50" },
+                { "_gvid": 2, "tail": 2, "head": 3, "pos": "50,50 50,10" }
+            ]
+        }"#;
+        let mut output = Vec::new();
+        convert_to_bpmn(json, &mut output).unwrap();
+        let xml = String::from_utf8(output).unwrap();
+
+        assert!(xml.contains(r#"id="Element_0""#));
+        assert!(xml.contains(r#"name="Start""#));
+        assert!(xml.contains("<bpmn:startEvent"));
+        assert!(xml.contains("<bpmn:task"));
+        assert!(xml.contains("<bpmn:exclusiveGateway"));
+        assert!(xml.contains("<bpmn:endEvent"));
+        assert!(xml.contains(r#"sourceRef="Element_0" targetRef="Element_1""#));
+        assert!(xml.contains(r#"sourceRef="Element_1" targetRef="Element_2""#));
+        assert!(xml.contains(r#"sourceRef="Element_2" targetRef="Element_3""#));
+    }
+
+    #[test]
+    fn test_gateway_types() {
+        let json = r#"{
+            "bb": "0,0,100,100",
+            "objects": [
+                { "_gvid": 0, "name": "g_and__parallel", "label": "AND", "pos": "50,50" },
+                { "_gvid": 1, "name": "g_or__inclusive", "label": "OR", "pos": "50,20" }
+            ]
+        }"#;
+        let mut output = Vec::new();
+        convert_to_bpmn(json, &mut output).unwrap();
+        let xml = String::from_utf8(output).unwrap();
+
+        assert!(xml.contains("<bpmn:parallelGateway"));
+        assert!(xml.contains("<bpmn:inclusiveGateway"));
+    }
+
+    #[test]
+    fn test_coordinate_flip() {
+        // Height is 200. Pos 50,50 should become 50, 150 (200-50).
+        let json = r#"{
+            "bb": "0,0,100,200",
+            "objects": [
+                { "_gvid": 0, "name": "start__node", "pos": "50,50", "shape": "circle" }
+            ]
+        }"#;
+        let mut output = Vec::new();
+        convert_to_bpmn(json, &mut output).unwrap();
+        let xml = String::from_utf8(output).unwrap();
+
+        // StartEvent is centered at pos, so Bounds y should be y - 18.
+        // raw y = 50 -> flipped y = 200 - 50 = 150.
+        // Bounds y = 150 - 18 = 132.
+        assert!(xml.contains(r#"y="132""#));
+    }
 }
