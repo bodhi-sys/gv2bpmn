@@ -1,7 +1,7 @@
 changequote(`[[', `]]')dnl
 define([[check_node]], [[ifdef([[NODE_$1]], , [[ERROR: no such node '$1'
 ]])]])dnl
-define([[get_id]], [[ifdef([[PREFIX_$1]], [[defn([[PREFIX_$1]])]], [[$1]])]])dnl
+define([[get_id]], [["ifdef([[PREFIX_$1]], [[defn([[PREFIX_$1]])]], [[$1]])"]])dnl
 define([[start]], [[define([[NODE_START_NODE]], [[1]])dnl
 define([[PREFIX_START_NODE]], [[start__START_NODE]])dnl
 get_id([[START_NODE]]) [label="$1", shape=circle]]])dnl
