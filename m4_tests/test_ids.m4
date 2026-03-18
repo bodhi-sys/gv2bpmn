@@ -1,0 +1,8 @@
+include(`bpmn.m4')
+t([[simple]], [[Simple ID]])
+t([[id with spaces]], [[ID with spaces]])
+t([[id:with:colons]], [[ID with colons]])
+t([[id_with_underscores]], [[ID with underscores]])
+t([[id.with.dots]], [[ID with dots]])
+to([[simple]], [[id with spaces]])
+to([[id:with:colons]], [[id_with_underscores]])

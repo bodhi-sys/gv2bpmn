@@ -1,0 +1,8 @@
+
+"t__simple" [label="Simple ID"]
+"t__id with spaces" [label="ID with spaces"]
+"t__id:with:colons" [label="ID with colons"]
+"t__id_with_underscores" [label="ID with underscores"]
+"t__id.with.dots" [label="ID with dots"]
+"t__simple" -> "t__id with spaces"
+"t__id:with:colons" -> "t__id_with_underscores"

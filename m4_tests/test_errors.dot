@@ -1,0 +1,10 @@
+
+"t__dup" [label="First task"]
+ERROR: duplicate task node 'dup'
+
+ERROR: no such node 'missing1'
+ERROR: no such node 'missing2'
+"missing1" -> "missing2"
+ERROR: no such node 'missing1'
+ERROR: no such node 'missing2'
+"missing1" -> "missing2" [label="label"]

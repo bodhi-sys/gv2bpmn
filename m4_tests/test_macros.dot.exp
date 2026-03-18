@@ -1,0 +1,14 @@
+
+"start__NODE" [label="Start", shape=circle]
+"t__task1" [label="Task 1"]
+"g_xor__xor1" [label="Either/Or", shape=diamond]
+"g_or__or1" [label="Some", shape=diamond]
+"g_and__and1" [label="All", shape=diamond]
+"end__NODE" [label="End", shape=doublecircle]
+"start__NODE" -> "t__task1"
+"t__task1" -> "g_xor__xor1"
+"g_xor__xor1" -> "g_or__or1" [label="Option A"]
+"g_xor__xor1" -> "g_and__and1" [label="Option B"]
+ERROR: no such node 'end__NODE'
+"g_or__or1" -> "end__NODE"
+"g_and__and1" -> "end__NODE"

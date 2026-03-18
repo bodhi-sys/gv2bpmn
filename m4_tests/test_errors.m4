@@ -1,0 +1,5 @@
+include(`bpmn.m4')
+t(dup, [[First task]])
+t(dup, [[Second task]])
+to(missing1, missing2)
+g_to(missing1, missing2, [[label]])

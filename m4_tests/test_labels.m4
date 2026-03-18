@@ -1,0 +1,8 @@
+include(`bpmn.m4')
+t(to_label, [[Add 1 to counter]])
+t(start_label, [[This is the start]])
+t(comma_label, [[Step 1, then Step 2]])
+t(empty_label, [[]])
+start([[Start here]])
+end([[End there]])
+g_to(to_label, start_label, [[moving to next]])
