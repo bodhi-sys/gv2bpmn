@@ -1,0 +1,8 @@
+
+"start__NODE" [label="Start\nPoint", shape=circle]
+"t__task1" [label="Task with\nmultiline\nlabel"]
+"g_xor__gate1" [label="Either\nA or B", shape=diamond]
+"end__NODE" [label="End\nPoint", shape=doublecircle]
+"start__NODE" -> "t__task1"
+"t__task1" -> "g_xor__gate1" [label="path\ntaken"]
+"g_xor__gate1" -> "end__NODE"
